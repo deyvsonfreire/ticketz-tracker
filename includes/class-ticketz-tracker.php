@@ -73,17 +73,31 @@ class Ticketz_Tracker {
             mt_rand(0, 65535), mt_rand(0, 65535), mt_rand(0, 65535));
     }
 
+    // Função para codificar o sessionID
+    function encodeSessionID($num) {
+        $NON_PRINTABLES = ['\u200a', '\u200b', '\u200c', '\u200d', '\u200e'];
+        $base = count($NON_PRINTABLES);
+        $output = "";
+
+        while($num > 0) {
+            $output = $NON_PRINTABLES[$num % $base] + $output; // MSB -> LSB
+            $num = floor($num / $base);
+        }
+
+        return $output;
+    }
+
     public function user_visit_tracking() {
         ?>
         <script type="text/javascript">
         // Função para obter um parâmetro de URL
         function getURLParameter(name) {
-            return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[,""])[1].replace(/\+/g, '%20'))||null;
+            return decodeURIComponent((new RegExp('[?|&]' + name + '=' + '([^&;]+?)(&|#|;|$)').exec(location.search)||[, ""])[1].replace(/\+/g, '%20'))||null;
         }
 
         // Geração do SessionID
         var sessionID = "<?php echo $this->generateSessionID(); ?>";
-    
+
         // Coleta as informações da URL
         var fbclid = getURLParameter('fbclid');
         var gclid = getURLParameter('gclid');
@@ -98,7 +112,7 @@ class Ticketz_Tracker {
         var funnel_id = getURLParameter('funnel_id');
         var channel_id = getURLParameter('channel_id');
         var src = getURLParameter('src');
-    
+
         // Coleta informações da visita do usuário
         var visitData = {
             ip_address: "<?php echo $_SERVER['REMOTE_ADDR']; ?>",
@@ -119,7 +133,7 @@ class Ticketz_Tracker {
             channel_id: channel_id,
             src: src
         };
-    
+
         console.log(visitData); // Log para depuração, você pode removê-lo depois
 
         // Enviar dados para o servidor
@@ -136,23 +150,22 @@ class Ticketz_Tracker {
         },
         error: function(error) {
             console.error(error); // Log para depuração
-    }
-});
-        
+        }
+    });
+
         </script>
         <?php
     }
 
-    
     public function save_user_visit_data() {
         global $wpdb;
-    
+
         $visitData = $_POST['visitData'];
         $sessionID = $_POST['sessionID'];
-    
+
         // Nome da tabela
         $table_name_user_data = $wpdb->prefix . 'ticketz_tracker_user_data';
-    
+
         // Inserir dados na tabela
         $wpdb->insert(
             $table_name_user_data,
@@ -178,11 +191,11 @@ class Ticketz_Tracker {
                 'date_time' => $visitData['date_time']
             )
         );
-    
+
         // Enviar uma resposta de sucesso
         wp_send_json_success('Dados da visita salvos com sucesso.');
     }
-    
-    
 
 }
+
+?>
